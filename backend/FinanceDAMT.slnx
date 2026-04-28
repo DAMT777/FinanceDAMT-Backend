@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FinanceDAMT.API/FinanceDAMT.API.csproj" />
+    <Project Path="src/FinanceDAMT.Application/FinanceDAMT.Application.csproj" />
+    <Project Path="src/FinanceDAMT.Domain/FinanceDAMT.Domain.csproj" />
+    <Project Path="src/FinanceDAMT.Infrastructure/FinanceDAMT.Infrastructure.csproj" />
+  </Folder>
+</Solution>

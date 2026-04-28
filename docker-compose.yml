@@ -1,0 +1,77 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: financedamt_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: financedamt
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: financedamt_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: src/FinanceDAMT.API/Dockerfile
+    container_name: financedamt_api
+    restart: unless-stopped
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - DatabaseProvider=${DatabaseProvider:-PostgreSQL}
+      - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection:-Host=postgres;Port=5432;Database=financedamt;Username=postgres;Password=postgres}
+      - ConnectionStrings__PostgreSQL=${ConnectionStrings__PostgreSQL:-Host=postgres;Port=5432;Database=financedamt;Username=postgres;Password=postgres}
+      - ConnectionStrings__SqlServer=${ConnectionStrings__SqlServer:-Server=sqlserver,1433;Database=FinanceDAMT;User Id=sa;Password=__SET_IN_ENV__;TrustServerCertificate=True}
+      - RedisSettings__Connection=${RedisSettings__Connection:-redis:6379}
+      - JwtSettings__Secret=${JwtSettings__Secret}
+      - JwtSettings__Issuer=${JwtSettings__Issuer:-FinanceDAMT}
+      - JwtSettings__Audience=${JwtSettings__Audience:-FinanceDAMT}
+      - JwtSettings__AccessTokenExpirationMinutes=${JwtSettings__AccessTokenExpirationMinutes:-60}
+      - JwtSettings__RefreshTokenExpirationDays=${JwtSettings__RefreshTokenExpirationDays:-7}
+      - Groq__ApiKey=${Groq__ApiKey}
+      - Groq__BaseUrl=${Groq__BaseUrl:-https://api.groq.com/openai/v1}
+      - Groq__FastModel=${Groq__FastModel:-llama-3.1-8b-instant}
+      - Groq__SmartModel=${Groq__SmartModel:-llama-3.3-70b-versatile}
+      - SmtpSettings__Host=${SmtpSettings__Host}
+      - SmtpSettings__Port=${SmtpSettings__Port:-587}
+      - SmtpSettings__User=${SmtpSettings__User}
+      - SmtpSettings__Pass=${SmtpSettings__Pass}
+      - SmtpSettings__FromEmail=${SmtpSettings__FromEmail:-noreply@financedamt.com}
+      - SmtpSettings__FromName=${SmtpSettings__FromName:-FinanceDAMT}
+      - BlobStorage__ConnectionString=${BlobStorage__ConnectionString}
+      - BlobStorage__ContainerName=${BlobStorage__ContainerName:-receipts}
+      - AppSettings__FrontendBaseUrl=${AppSettings__FrontendBaseUrl:-http://localhost:19006}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
