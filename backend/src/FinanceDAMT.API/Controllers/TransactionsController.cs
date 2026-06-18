@@ -24,6 +24,17 @@ public class TransactionsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
+    private const long MaxReceiptBytes = 5 * 1024 * 1024; // 5 MB
+
+    private static readonly HashSet<string> AllowedReceiptContentTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/jpeg",
+        "image/png",
+        "image/webp",
+        "image/heic",
+        "application/pdf"
+    };
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TransactionsController"/> class.
     /// </summary>
@@ -132,6 +143,12 @@ public class TransactionsController : ControllerBase
 
         if (file.Length == 0)
             return BadRequest(new { message = "File is empty." });
+
+        if (file.Length > MaxReceiptBytes)
+            return BadRequest(new { message = "File exceeds the 5 MB size limit." });
+
+        if (!AllowedReceiptContentTypes.Contains(file.ContentType))
+            return BadRequest(new { message = "Unsupported file type. Allowed: JPEG, PNG, WEBP, HEIC, PDF." });
 
         await using var stream = file.OpenReadStream();
         var url = await _mediator.Send(new UploadTransactionReceiptCommand(id, stream, file.FileName, file.ContentType), ct);

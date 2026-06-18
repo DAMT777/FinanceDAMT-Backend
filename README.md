@@ -60,4 +60,3 @@ Servicios:
 - SmtpSettings__Host
 - BlobStorage__ConnectionString
 
-Sugerencia: usa un archivo .env para cllentralizar secretos cuando uses Docker.

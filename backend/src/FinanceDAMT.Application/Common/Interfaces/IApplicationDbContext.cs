@@ -14,6 +14,7 @@ public interface IApplicationDbContext
     DbSet<Budget> Budgets { get; }
     DbSet<SavingGoal> SavingGoals { get; }
     DbSet<SavingContribution> SavingContributions { get; }
+    DbSet<Subscription> Subscriptions { get; }
     DbSet<AIRecommendation> AIRecommendations { get; }
     DbSet<FinancialScore> FinancialScores { get; }
     DbSet<Debt> Debts { get; }

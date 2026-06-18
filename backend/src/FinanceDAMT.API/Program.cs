@@ -20,7 +20,14 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
 // ── Controllers ───────────────────────────────────────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Serialize/deserialize enums as their string names (e.g. "Monthly"),
+        // matching the string-union contract the frontend expects for every enum.
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 
 // ── Swagger / OpenAPI ─────────────────────────────────────────────────────────

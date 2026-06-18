@@ -36,7 +36,8 @@ public sealed class GroqAIService : IAIService
         _smartModel = configuration["Groq:SmartModel"] ?? "llama-3.3-70b-versatile";
         _fastModel = configuration["Groq:FastModel"] ?? "llama-3.1-8b-instant";
 
-        _httpClient.BaseAddress = new Uri(baseUrl);
+        // Ensure the base path (e.g. /openai/v1) is preserved when combining with relative request URIs.
+        _httpClient.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
         _retryPolicy = Policy<HttpResponseMessage>
@@ -252,7 +253,7 @@ public sealed class GroqAIService : IAIService
                 .ExecuteAsync(() =>
                 {
                     var content = new StringContent(serialized, Encoding.UTF8, "application/json");
-                    return _httpClient.PostAsync("/chat/completions", content);
+                    return _httpClient.PostAsync("chat/completions", content);
                 });
 
             var payload = await response.Content.ReadAsStringAsync();

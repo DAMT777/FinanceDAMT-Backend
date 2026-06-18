@@ -21,6 +21,7 @@ public class ApplicationDbContext
     public DbSet<Budget> Budgets => Set<Budget>();
     public DbSet<SavingGoal> SavingGoals => Set<SavingGoal>();
     public DbSet<SavingContribution> SavingContributions => Set<SavingContribution>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<AIRecommendation> AIRecommendations => Set<AIRecommendation>();
     public DbSet<FinancialScore> FinancialScores => Set<FinancialScore>();
     public DbSet<Debt> Debts => Set<Debt>();
