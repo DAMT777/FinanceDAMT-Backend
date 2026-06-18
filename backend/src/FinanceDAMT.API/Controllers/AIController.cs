@@ -3,10 +3,12 @@ using FinanceDAMT.Application.Common.Interfaces;
 using FinanceDAMT.Application.Features.AI.Commands.CalculateFinancialScore;
 using FinanceDAMT.Application.Features.AI.Commands.GenerateRecommendations;
 using FinanceDAMT.Application.Features.AI.Commands.SendChatMessage;
+using FinanceDAMT.Application.Features.AI.Queries.GenerateReport;
 using FinanceDAMT.Application.Features.AI.Queries.GetChatHistory;
 using FinanceDAMT.Application.Features.AI.Queries.GetFinancialScore;
 using FinanceDAMT.Application.Features.AI.Queries.GetRecommendations;
 using FinanceDAMT.Application.Features.AI.Queries.GetSpendingPrediction;
+using FinanceDAMT.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -43,6 +45,16 @@ public class AIController : ControllerBase
     public async Task<IActionResult> Chat([FromBody] ChatRequest request, CancellationToken ct)
     {
         var result = await _mediator.Send(new SendChatMessageCommand(request.Message), ct);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Generates a financial report for a given period (Today, ThisWeek, LastWeek, ThisMonth, ...).
+    /// </summary>
+    [HttpGet("report")]
+    public async Task<IActionResult> GetReport([FromQuery] ReportPeriod period = ReportPeriod.ThisMonth, CancellationToken ct = default)
+    {
+        var result = await _mediator.Send(new GenerateReportQuery(period), ct);
         return Ok(result);
     }
 
