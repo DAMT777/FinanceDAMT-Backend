@@ -69,7 +69,15 @@ public sealed class GroqAIService : IAIService
         var contextPrompt = await BuildFinancialContextPrompt(userId);
         var historyPrompt = string.Join("\n", history.Select(h => $"{h.Role}: {h.Content}"));
         var userPrompt = $"Context:\n{contextPrompt}\n\nConversation:\n{historyPrompt}\n\nUser: {userMessage}";
-        var response = await CompleteChatAsync(_smartModel, "You are a personal finance assistant. Keep responses practical and concise.", userPrompt);
+        const string systemPrompt =
+            "You are a personal finance assistant for the FinanceDAMT app. " +
+            "Answer using ONLY the data in Context, which includes expense totals by category, " +
+            "savings goals, monthly balances, and the user's active subscriptions. " +
+            "Amounts are in the user's local currency (Colombian pesos, COP). " +
+            "When the user asks about subscriptions, list each active subscription by name with its " +
+            "amount and billing cycle, and give the total estimated monthly cost. " +
+            "Reply in the same language the user writes in. Keep responses practical and concise.";
+        var response = await CompleteChatAsync(_smartModel, systemPrompt, userPrompt);
 
         var updatedHistory = history.ToList();
         updatedHistory.Add(new ChatMessageDto("user", userMessage, DateTime.UtcNow));
@@ -211,6 +219,24 @@ public sealed class GroqAIService : IAIService
             .Select(g => new { g.Name, g.TargetAmount, g.CurrentAmount })
             .ToListAsync();
 
+        var subsRaw = await _context.Subscriptions
+            .Where(s => s.UserId == userId && s.IsActive)
+            .Select(s => new { s.Name, s.Amount, s.BillingCycle, s.NextBillingDate })
+            .ToListAsync();
+
+        var subscriptions = subsRaw
+            .Select(s => new
+            {
+                s.Name,
+                s.Amount,
+                BillingCycle = s.BillingCycle.ToString(),
+                NextBillingDate = s.NextBillingDate.ToString("yyyy-MM-dd"),
+                MonthlyEquivalent = Math.Round(ToMonthlyAmount(s.Amount, s.BillingCycle), 2)
+            })
+            .ToList();
+
+        var subscriptionsMonthlyTotal = Math.Round(subscriptions.Sum(s => s.MonthlyEquivalent), 2);
+
         var monthlyBalance = await _context.Transactions
             .Where(t => t.UserId == userId && t.Date >= since)
             .GroupBy(t => new { t.Date.Year, t.Date.Month })
@@ -228,9 +254,21 @@ public sealed class GroqAIService : IAIService
         {
             totalsByCategory,
             goals,
+            subscriptions,
+            subscriptionsMonthlyTotal,
             monthlyBalance = monthlyBalance.Select(x => new { x.Year, x.Month, Balance = x.Income - x.Expenses })
         });
     }
+
+    // Normalizes a subscription's charge to an estimated monthly cost.
+    private static decimal ToMonthlyAmount(decimal amount, BillingCycle cycle) => cycle switch
+    {
+        BillingCycle.Weekly => amount * 52m / 12m,
+        BillingCycle.Monthly => amount,
+        BillingCycle.Quarterly => amount / 3m,
+        BillingCycle.Yearly => amount / 12m,
+        _ => amount
+    };
 
     private async Task<string> CompleteChatAsync(string model, string systemPrompt, string userPrompt)
     {
