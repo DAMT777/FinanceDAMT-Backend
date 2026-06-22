@@ -84,8 +84,10 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // ── Middleware pipeline ───────────────────────────────────────────────────────
-app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
+// Serilog request logging stays outermost so it records the final status code
+// (e.g. 409) instead of a 500 when an exception is converted by the handler below.
 app.UseSerilogRequestLogging();
+app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

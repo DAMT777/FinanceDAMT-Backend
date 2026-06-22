@@ -35,7 +35,19 @@ public class GlobalExceptionHandlerMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
+            // Expected business/validation failures are normal 4xx responses, not server
+            // errors — log them concisely at Warning, without a noisy stack trace.
+            if (ex is ValidationException or NotFoundException or UnauthorizedException or ConflictException)
+            {
+                _logger.LogWarning(
+                    "{ExceptionType} on {Method} {Path}: {Message}",
+                    ex.GetType().Name, context.Request.Method, context.Request.Path, ex.Message);
+            }
+            else
+            {
+                _logger.LogError(ex, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
+            }
+
             await HandleExceptionAsync(context, ex);
         }
     }

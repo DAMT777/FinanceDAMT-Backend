@@ -93,6 +93,7 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IBlobStorageService, BlobStorageService>();
         services.AddScoped<IBudgetAlertService, BudgetAlertService>();
+        services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IFinanceRecurringJobs, FinanceRecurringJobs>();
         services.AddHttpClient<IAIService, GroqAIService>();
         services.AddScoped<ICurrentUserService, CurrentUserService>();

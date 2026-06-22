@@ -22,6 +22,7 @@ public class User : IdentityUser<Guid>
     public ICollection<Budget> Budgets { get; set; } = new List<Budget>();
     public ICollection<SavingGoal> SavingGoals { get; set; } = new List<SavingGoal>();
     public ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+    public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public ICollection<AIRecommendation> AIRecommendations { get; set; } = new List<AIRecommendation>();
     public ICollection<FinancialScore> FinancialScores { get; set; } = new List<FinancialScore>();
     public ICollection<Debt> Debts { get; set; } = new List<Debt>();

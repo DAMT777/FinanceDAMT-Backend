@@ -64,6 +64,16 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
         };
 
         _context.RefreshTokens.Add(refreshToken);
+
+        // Give every new user a default wallet so they can record movements right away.
+        _context.Accounts.Add(new Account
+        {
+            UserId = user.Id,
+            Name = "Efectivo",
+            Type = FinanceDAMT.Domain.Enums.AccountType.Cash,
+            Balance = 0m
+        });
+
         await _context.SaveChangesAsync(cancellationToken);
 
         var expirationMinutes = _configuration.GetValue<int>("JwtSettings:AccessTokenExpirationMinutes", 60);

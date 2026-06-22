@@ -43,8 +43,20 @@ public sealed class LogExpenseFromTextCommandHandler : IRequestHandler<LogExpens
             .OrderBy(a => a.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
+        // First time the user logs a movement without any wallet: create a default
+        // "Efectivo" account so the assistant just works instead of blocking them.
         if (account is null)
-            return new AgentLogResultDto(false, "Primero necesitas crear una cuenta para poder registrar movimientos.", null);
+        {
+            account = new Domain.Entities.Account
+            {
+                UserId = userId,
+                Name = "Efectivo",
+                Type = AccountType.Cash,
+                Balance = 0m
+            };
+            _context.Accounts.Add(account);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
 
         var categoryType = parsed.Type == TransactionType.Income ? CategoryType.Income : CategoryType.Expense;
         var category = await ResolveCategoryAsync(userId, parsed.CategoryName, categoryType, cancellationToken);
