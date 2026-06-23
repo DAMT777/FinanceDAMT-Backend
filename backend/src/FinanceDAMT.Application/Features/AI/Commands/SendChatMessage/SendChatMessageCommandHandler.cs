@@ -1,6 +1,7 @@
 using FinanceDAMT.Application.Common.Exceptions;
 using FinanceDAMT.Application.Common.Interfaces;
 using FinanceDAMT.Application.Features.AI.Agent;
+using FinanceDAMT.Application.Features.AI.Commands.AddContributionFromText;
 using FinanceDAMT.Application.Features.AI.Commands.LogExpenseFromText;
 using FinanceDAMT.Application.Features.AI.DTOs;
 using FinanceDAMT.Application.Features.AI.Queries.GenerateReport;
@@ -86,6 +87,12 @@ public sealed class SendChatMessageCommandHandler : IRequestHandler<SendChatMess
         {
             var report = await _sender.Send(new GenerateReportQuery(reportPeriod.Value), cancellationToken);
             return report.Message;
+        }
+
+        if (FinanceTextParser.TryParseGoalContribution(message) is not null)
+        {
+            var result = await _sender.Send(new AddContributionFromTextCommand(message), cancellationToken);
+            return result.Message;
         }
 
         if (FinanceTextParser.TryParseExpense(message) is not null)

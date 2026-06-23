@@ -75,6 +75,9 @@ public sealed class GroqAIService : IAIService
             "Amounts are in the user's local currency (Colombian pesos, COP). " +
             "When the user asks about subscriptions, list each active subscription by name with its " +
             "amount and billing cycle, and give the total estimated monthly cost. " +
+            "To assign money to a savings goal, the user must phrase it as an action such as " +
+            "\"asigna el 10% de mi balance a mi meta del viaje\" or \"aporta 50000 a mi meta\"; " +
+            "the app records that for real. Do not claim you assigned or moved money yourself. " +
             "Reply in the same language the user writes in. Keep responses practical and concise.";
         var response = await CompleteChatAsync(_smartModel, systemPrompt, userPrompt);
 

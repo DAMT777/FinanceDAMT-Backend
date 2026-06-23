@@ -7,6 +7,8 @@ namespace FinanceDAMT.Application.Features.AI.Agent;
 
 public sealed record ParsedExpense(TransactionType Type, decimal Amount, string CategoryName, string Description);
 
+public sealed record ParsedGoalContribution(decimal? Amount, decimal? PercentOfBalance);
+
 public static class FinanceTextParser
 {
     private static readonly string[] ReportTriggers =
@@ -46,6 +48,14 @@ public static class FinanceTextParser
         ("suscripcion", "Subscriptions"), ("subscription", "Subscriptions"), ("netflix", "Subscriptions"),
         ("spotify", "Subscriptions"), ("plan", "Subscriptions")
     };
+
+    private static readonly string[] ContributionTriggers =
+    {
+        "asigna", "asignar", "asigne", "aporta", "aportar", "aporte", "abona", "abonar",
+        "destina", "destinar", "guarda para", "ahorra para", "anade a", "suma a"
+    };
+
+    private static readonly string[] GoalWords = { "meta", "objetivo", "goal", "proposito" };
 
     private static readonly (string Keyword, string Category)[] IncomeMap =
     {
@@ -112,6 +122,25 @@ public static class FinanceTextParser
         var category = ResolveCategoryName(n, type.Value);
         var description = BuildDescription(message);
         return new ParsedExpense(type.Value, amount, category, description);
+    }
+
+        public static ParsedGoalContribution? TryParseGoalContribution(string message)
+    {
+        var n = Normalize(message);
+        if (!ContributionTriggers.Any(trigger => n.Contains(trigger)))
+            return null;
+        if (!GoalWords.Any(word => n.Contains(word)))
+            return null;
+
+        var pct = Regex.Match(n, @"(\d+(?:[.,]\d+)?)\s*(?:%|por\s*ciento|porciento)");
+        if (pct.Success && TryBaseNumber(pct.Groups[1].Value, out var percent) && percent > 0)
+            return new ParsedGoalContribution(null, percent);
+
+        var amount = ParseAmount(n);
+        if (amount > 0)
+            return new ParsedGoalContribution(amount, null);
+
+        return null;
     }
 
     public static string ResolveCategoryName(string normalizedText, TransactionType type)
