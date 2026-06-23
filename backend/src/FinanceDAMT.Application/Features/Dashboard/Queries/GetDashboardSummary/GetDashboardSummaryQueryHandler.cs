@@ -103,7 +103,6 @@ public sealed class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboa
             balanceEvolution.Add(new MonthlyBalancePointDto(item.Year, item.Month, runningBalance));
         }
 
-        // Ensure fixed 6-month shape for new users so clients can safely render charts.
         if (monthlyAggregates.Count == 0)
         {
             for (var i = 5; i >= 0; i--)

@@ -65,7 +65,6 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
 
         _context.RefreshTokens.Add(refreshToken);
 
-        // Give every new user a default wallet so they can record movements right away.
         _context.Accounts.Add(new Account
         {
             UserId = user.Id,

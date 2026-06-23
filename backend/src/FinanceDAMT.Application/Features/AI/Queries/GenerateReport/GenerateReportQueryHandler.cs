@@ -144,7 +144,7 @@ public sealed class GenerateReportQueryHandler : IRequestHandler<GenerateReportQ
 
     private static DateTime StartOfWeek(DateTime date)
     {
-        // Monday as the first day of the week.
+
         var diff = ((int)date.DayOfWeek + 6) % 7;
         return date.AddDays(-diff);
     }

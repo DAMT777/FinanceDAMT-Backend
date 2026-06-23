@@ -1,15 +1,13 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace FinanceDAMT.Infrastructure.Migrations
 {
-    /// <inheritdoc />
-    public partial class AddSubscriptions : Migration
+        public partial class AddSubscriptions : Migration
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
+                protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
                 name: "Subscriptions",
@@ -46,8 +44,7 @@ namespace FinanceDAMT.Infrastructure.Migrations
                 column: "UserId");
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+                protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
                 name: "Subscriptions");

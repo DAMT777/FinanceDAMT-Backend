@@ -5,8 +5,7 @@ namespace FinanceDAMT.Domain.Entities;
 
 public class Category : BaseEntity
 {
-    /// <summary>Null = global default category; non-null = user-defined category.</summary>
-    public Guid? UserId { get; set; }
+        public Guid? UserId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
     public string Color { get; set; } = "#6B7280";

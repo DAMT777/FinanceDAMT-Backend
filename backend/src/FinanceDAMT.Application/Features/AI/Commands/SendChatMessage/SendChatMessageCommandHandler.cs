@@ -49,7 +49,6 @@ public sealed class SendChatMessageCommandHandler : IRequestHandler<SendChatMess
                 r.GeneratedAt))
             .ToList();
 
-        // ── Agent routing: report request → log statement → general chat ──────────
         var responseText = await ResolveAgentResponseAsync(userId, request.Message, history, cancellationToken);
 
         _context.AIRecommendations.Add(new AIRecommendation

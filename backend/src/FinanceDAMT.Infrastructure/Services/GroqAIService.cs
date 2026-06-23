@@ -36,7 +36,6 @@ public sealed class GroqAIService : IAIService
         _smartModel = configuration["Groq:SmartModel"] ?? "llama-3.3-70b-versatile";
         _fastModel = configuration["Groq:FastModel"] ?? "llama-3.1-8b-instant";
 
-        // Ensure the base path (e.g. /openai/v1) is preserved when combining with relative request URIs.
         _httpClient.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
 
@@ -260,7 +259,6 @@ public sealed class GroqAIService : IAIService
         });
     }
 
-    // Normalizes a subscription's charge to an estimated monthly cost.
     private static decimal ToMonthlyAmount(decimal amount, BillingCycle cycle) => cycle switch
     {
         BillingCycle.Weekly => amount * 52m / 12m,

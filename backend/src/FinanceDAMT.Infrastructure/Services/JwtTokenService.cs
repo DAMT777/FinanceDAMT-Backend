@@ -68,7 +68,7 @@ public class JwtTokenService : IJwtTokenService
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret)),
             ValidateIssuer = false,
             ValidateAudience = false,
-            ValidateLifetime = false // allow expired tokens for refresh purposes
+            ValidateLifetime = false
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();

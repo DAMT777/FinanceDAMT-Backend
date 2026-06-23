@@ -1,14 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace FinanceDAMT.Infrastructure.Migrations
 {
-    /// <inheritdoc />
-    public partial class UpdateSchema : Migration
+        public partial class UpdateSchema : Migration
     {
-        /// <inheritdoc />
-        protected override void Up(MigrationBuilder migrationBuilder)
+                protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
                 name: "MilestonesReached",
@@ -32,8 +30,7 @@ namespace FinanceDAMT.Infrastructure.Migrations
                 defaultValue: false);
         }
 
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
+                protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropColumn(
                 name: "MilestonesReached",

@@ -49,7 +49,6 @@ public sealed class AddContributionCommandHandler : IRequestHandler<AddContribut
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        // Notify when a new progress milestone (25/50/75/100%) is reached.
         var newMilestones = goal.MilestonesReached & ~previousMilestones;
         var milestonePercent = HighestMilestonePercent(newMilestones);
         if (milestonePercent > 0)

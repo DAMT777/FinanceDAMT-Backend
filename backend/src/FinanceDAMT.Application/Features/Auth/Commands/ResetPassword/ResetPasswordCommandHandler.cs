@@ -33,7 +33,6 @@ public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand,
             throw new Common.Exceptions.ValidationException(errors);
         }
 
-        // Revoke all active refresh tokens for this user after password reset
         var activeTokens = await _context.RefreshTokens
             .Where(rt => rt.UserId == user.Id && rt.Revoked == null && rt.Expires > DateTime.UtcNow)
             .ToListAsync(cancellationToken);

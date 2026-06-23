@@ -6,11 +6,7 @@ namespace FinanceDAMT.Application.Features.Subscriptions;
 
 internal static class SubscriptionProjection
 {
-    /// <summary>
-    /// Normalizes the subscription cost to a monthly figure so totals across
-    /// different billing cycles can be summed and compared.
-    /// </summary>
-    public static decimal CalculateMonthlyCost(decimal amount, BillingCycle cycle)
+        public static decimal CalculateMonthlyCost(decimal amount, BillingCycle cycle)
     {
         var monthly = cycle switch
         {

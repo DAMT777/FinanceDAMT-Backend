@@ -11,26 +11,21 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// ── Serilog ───────────────────────────────────────────────────────────────────
 builder.Host.UseSerilog((ctx, lc) =>
     lc.ReadFrom.Configuration(ctx.Configuration));
 
-// ── Application + Infrastructure DI ──────────────────────────────────────────
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-// ── Controllers ───────────────────────────────────────────────────────────────
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // Serialize/deserialize enums as their string names (e.g. "Monthly"),
-        // matching the string-union contract the frontend expects for every enum.
+
         options.JsonSerializerOptions.Converters.Add(
             new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
 
-// ── Swagger / OpenAPI ─────────────────────────────────────────────────────────
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -40,7 +35,6 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Personal Finance Management API"
     });
 
-    // JWT bearer support in Swagger UI
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -66,26 +60,20 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
-    // Include XML comments if available
     var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     if (File.Exists(xmlPath))
         options.IncludeXmlComments(xmlPath);
 });
 
-// ── CORS ──────────────────────────────────────────────────────────────────────
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
         policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
 
-// ── Build ─────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── Middleware pipeline ───────────────────────────────────────────────────────
-// Serilog request logging stays outermost so it records the final status code
-// (e.g. 409) instead of a 500 when an exception is converted by the handler below.
 app.UseSerilogRequestLogging();
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 
@@ -134,7 +122,6 @@ RecurringJob.AddOrUpdate<IFinanceRecurringJobs>(
 
 app.MapControllers();
 
-// ── Auto-migrate on startup (dev only) ───────────────────────────────────────
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();

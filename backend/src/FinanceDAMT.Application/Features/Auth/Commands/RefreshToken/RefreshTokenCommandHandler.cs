@@ -43,7 +43,6 @@ public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, A
         if (user.IsDeleted)
             throw new UnauthorizedException("Invalid refresh token.");
 
-        // Rotate: revoke old, issue new
         existing.Revoked = DateTime.UtcNow;
         existing.IsRevoked = true;
 

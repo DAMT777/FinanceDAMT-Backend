@@ -24,7 +24,7 @@ public class TransactionsController : ControllerBase
 {
     private readonly IMediator _mediator;
 
-    private const long MaxReceiptBytes = 5 * 1024 * 1024; // 5 MB
+    private const long MaxReceiptBytes = 5 * 1024 * 1024;
 
     private static readonly HashSet<string> AllowedReceiptContentTypes = new(StringComparer.OrdinalIgnoreCase)
     {

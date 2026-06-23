@@ -5,13 +5,8 @@ using FinanceDAMT.Domain.Enums;
 
 namespace FinanceDAMT.Application.Features.AI.Agent;
 
-/// <summary>Result of parsing a natural-language money movement (e.g. "compré una gaseosa a 5000").</summary>
 public sealed record ParsedExpense(TransactionType Type, decimal Amount, string CategoryName, string Description);
 
-/// <summary>
-/// Deterministic, offline natural-language parser that lets the chat assistant act as an agent:
-/// it recognizes report requests and money-movement statements without depending on the LLM.
-/// </summary>
 public static class FinanceTextParser
 {
     private static readonly string[] ReportTriggers =
@@ -59,8 +54,7 @@ public static class FinanceTextParser
         ("inversion", "Investment"), ("dividendo", "Investment"), ("investment", "Investment"), ("interes", "Investment")
     };
 
-    /// <summary>Lowercases and strips diacritics so keyword matching is accent-insensitive.</summary>
-    public static string Normalize(string text)
+        public static string Normalize(string text)
     {
         var lower = (text ?? string.Empty).ToLowerInvariant();
         var decomposed = lower.Normalize(NormalizationForm.FormD);
@@ -73,8 +67,7 @@ public static class FinanceTextParser
         return sb.ToString().Normalize(NormalizationForm.FormC);
     }
 
-    /// <summary>Returns the requested report period, or null when the message is not a report request.</summary>
-    public static ReportPeriod? TryParseReportPeriod(string message)
+        public static ReportPeriod? TryParseReportPeriod(string message)
     {
         var n = Normalize(message);
         if (!ReportTriggers.Any(trigger => n.Contains(trigger)))
@@ -100,8 +93,7 @@ public static class FinanceTextParser
         return ReportPeriod.ThisMonth;
     }
 
-    /// <summary>Returns a parsed money movement, or null when the message is not a log statement.</summary>
-    public static ParsedExpense? TryParseExpense(string message)
+        public static ParsedExpense? TryParseExpense(string message)
     {
         var n = Normalize(message);
         var amount = ParseAmount(n);
@@ -133,8 +125,7 @@ public static class FinanceTextParser
         return type == TransactionType.Income ? "Other income" : "Other expense";
     }
 
-    /// <summary>Extracts a monetary amount, understanding "5.000", "5k", "5 mil" and "1,5 millones".</summary>
-    public static decimal ParseAmount(string normalizedText)
+        public static decimal ParseAmount(string normalizedText)
     {
         var million = Regex.Match(normalizedText, @"(\d+(?:[.,]\d+)*)\s*(?:millones|millon)");
         if (million.Success && TryBaseNumber(million.Groups[1].Value, out var millionBase))
@@ -152,8 +143,7 @@ public static class FinanceTextParser
         return 0m;
     }
 
-    /// <summary>Parses a small multiplier base where "." or "," is a decimal separator (e.g. "1,5").</summary>
-    private static bool TryBaseNumber(string raw, out decimal value)
+        private static bool TryBaseNumber(string raw, out decimal value)
     {
         var normalized = raw.Replace(",", ".");
         return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out value);

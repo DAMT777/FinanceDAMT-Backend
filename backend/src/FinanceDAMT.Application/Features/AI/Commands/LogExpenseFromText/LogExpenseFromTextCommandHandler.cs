@@ -43,8 +43,6 @@ public sealed class LogExpenseFromTextCommandHandler : IRequestHandler<LogExpens
             .OrderBy(a => a.CreatedAt)
             .FirstOrDefaultAsync(cancellationToken);
 
-        // First time the user logs a movement without any wallet: create a default
-        // "Efectivo" account so the assistant just works instead of blocking them.
         if (account is null)
         {
             account = new Domain.Entities.Account

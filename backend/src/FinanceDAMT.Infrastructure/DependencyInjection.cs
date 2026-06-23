@@ -23,7 +23,7 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // ── Database ─────────────────────────────────────────────────────────
+
         var dbProvider = configuration["DatabaseProvider"] ?? "PostgreSQL";
         var defaultConnection = configuration["ConnectionStrings:DefaultConnection"];
 
@@ -50,7 +50,6 @@ public static class DependencyInjection
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<ITransactionRepository, TransactionRepository>();
 
-        // ── Identity ─────────────────────────────────────────────────────────
         services.AddIdentity<User, IdentityRole<Guid>>(options =>
         {
             options.Password.RequireDigit = true;
@@ -64,7 +63,6 @@ public static class DependencyInjection
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
-        // ── JWT Authentication ────────────────────────────────────────────────
         var secret = configuration["JwtSettings:Secret"]
             ?? throw new InvalidOperationException("JWT Secret is not configured.");
 
@@ -88,7 +86,6 @@ public static class DependencyInjection
             };
         });
 
-        // ── Services ─────────────────────────────────────────────────────────
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IBlobStorageService, BlobStorageService>();
@@ -99,13 +96,11 @@ public static class DependencyInjection
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddHttpContextAccessor();
 
-        // ── Redis ─────────────────────────────────────────────────────────────
         var redisConnection = configuration["RedisSettings:Connection"] ?? "localhost:6379";
         services.AddSingleton<IConnectionMultiplexer>(_ =>
             ConnectionMultiplexer.Connect(redisConnection));
         services.AddScoped<ICacheService, CacheService>();
 
-        // ── Hangfire ─────────────────────────────────────────────────────────
         services.AddHangfire(cfg => cfg.UseMemoryStorage());
         services.AddHangfireServer();
 

@@ -35,8 +35,7 @@ public class GlobalExceptionHandlerMiddleware
         }
         catch (Exception ex)
         {
-            // Expected business/validation failures are normal 4xx responses, not server
-            // errors — log them concisely at Warning, without a noisy stack trace.
+
             if (ex is ValidationException or NotFoundException or UnauthorizedException or ConflictException)
             {
                 _logger.LogWarning(

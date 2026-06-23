@@ -28,7 +28,7 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
 
     public async Task<Unit> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
-        // Always return success — never reveal whether email exists
+
         var user = await _userManager.FindByEmailAsync(request.Email);
         if (user is null || user.IsDeleted)
             return Unit.Value;
