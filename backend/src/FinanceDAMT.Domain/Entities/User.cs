@@ -7,6 +7,8 @@ public class User : IdentityUser<Guid>
 {
     public string Name { get; set; } = string.Empty;
     public string Currency { get; set; } = "COP";
+    public string? EmailVerificationCode { get; set; }
+    public DateTime? EmailVerificationCodeExpiresAt { get; set; }
     public FinancialProfile? FinancialProfile { get; set; }
     public bool BiometricEnabled { get; set; } = false;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

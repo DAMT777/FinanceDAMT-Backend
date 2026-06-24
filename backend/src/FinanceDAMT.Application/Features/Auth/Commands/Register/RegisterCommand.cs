@@ -7,4 +7,4 @@ public record RegisterCommand(
     string Name,
     string Email,
     string Password
-) : IRequest<AuthResponse>;
+) : IRequest<RegisterResultDto>;

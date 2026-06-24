@@ -2,8 +2,10 @@ using FinanceDAMT.Application.Features.Auth.Commands.ForgotPassword;
 using FinanceDAMT.Application.Features.Auth.Commands.Login;
 using FinanceDAMT.Application.Features.Auth.Commands.RefreshToken;
 using FinanceDAMT.Application.Features.Auth.Commands.Register;
+using FinanceDAMT.Application.Features.Auth.Commands.ResendVerification;
 using FinanceDAMT.Application.Features.Auth.Commands.ResetPassword;
 using FinanceDAMT.Application.Features.Auth.Commands.RevokeToken;
+using FinanceDAMT.Application.Features.Auth.Commands.VerifyEmail;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -38,6 +40,26 @@ public class AuthController : ControllerBase
     {
         var result = await _mediator.Send(command, ct);
         return Ok(result);
+    }
+
+    /// <summary>Confirm a newly registered email with the 6-digit code and obtain auth tokens.</summary>
+    [HttpPost("verify-email")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailCommand command, CancellationToken ct)
+    {
+        var result = await _mediator.Send(command, ct);
+        return Ok(result);
+    }
+
+    /// <summary>Resend the email verification code to a pending account.</summary>
+    [HttpPost("resend-verification")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResendVerification([FromBody] ResendVerificationCommand command, CancellationToken ct)
+    {
+        await _mediator.Send(command, ct);
+        return Ok();
     }
 
     /// <summary>Log in with email and password.</summary>

@@ -4,42 +4,42 @@ using FinanceDAMT.Application.Features.Auth.DTOs;
 using FinanceDAMT.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Configuration;
-using DomainRefreshToken = FinanceDAMT.Domain.Entities.RefreshToken;
+using Microsoft.Extensions.Logging;
 
 namespace FinanceDAMT.Application.Features.Auth.Commands.Register;
 
-public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthResponse>
+public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterResultDto>
 {
     private readonly UserManager<User> _userManager;
-    private readonly IJwtTokenService _jwtTokenService;
-    private readonly IApplicationDbContext _context;
-    private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<RegisterCommandHandler> _logger;
 
     public RegisterCommandHandler(
         UserManager<User> userManager,
-        IJwtTokenService jwtTokenService,
-        IApplicationDbContext context,
-        IConfiguration configuration)
+        IEmailService emailService,
+        ILogger<RegisterCommandHandler> logger)
     {
         _userManager = userManager;
-        _jwtTokenService = jwtTokenService;
-        _context = context;
-        _configuration = configuration;
+        _emailService = emailService;
+        _logger = logger;
     }
 
-    public async Task<AuthResponse> Handle(RegisterCommand request, CancellationToken cancellationToken)
+    public async Task<RegisterResultDto> Handle(RegisterCommand request, CancellationToken cancellationToken)
     {
         var existingUser = await _userManager.FindByEmailAsync(request.Email);
         if (existingUser is not null)
             throw new ConflictException($"Email '{request.Email}' is already registered.");
+
+        var code = EmailVerification.GenerateCode();
 
         var user = new User
         {
             Name = request.Name,
             Email = request.Email,
             UserName = request.Email,
-            EmailConfirmed = true
+            EmailConfirmed = false,
+            EmailVerificationCode = code,
+            EmailVerificationCodeExpiresAt = EmailVerification.ExpiryFromNow()
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -50,40 +50,10 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, AuthRespo
             throw new Common.Exceptions.ValidationException(errors);
         }
 
-        var roles = await _userManager.GetRolesAsync(user);
-        var accessToken = _jwtTokenService.GenerateAccessToken(user, roles);
-        var refreshTokenString = _jwtTokenService.GenerateRefreshToken();
+        _logger.LogInformation("Email verification code for {Email}: {Code}", request.Email, code);
 
-        var expirationDays = _configuration.GetValue<int>("JwtSettings:RefreshTokenExpirationDays", 7);
+        await _emailService.SendEmailVerificationAsync(user.Email!, user.Name, code, cancellationToken);
 
-        var refreshToken = new DomainRefreshToken
-        {
-            UserId = user.Id,
-            Token = refreshTokenString,
-            Expires = DateTime.UtcNow.AddDays(expirationDays)
-        };
-
-        _context.RefreshTokens.Add(refreshToken);
-
-        _context.Accounts.Add(new Account
-        {
-            UserId = user.Id,
-            Name = "Efectivo",
-            Type = FinanceDAMT.Domain.Enums.AccountType.Cash,
-            Balance = 0m
-        });
-
-        await _context.SaveChangesAsync(cancellationToken);
-
-        var expirationMinutes = _configuration.GetValue<int>("JwtSettings:AccessTokenExpirationMinutes", 60);
-
-        return new AuthResponse(
-            AccessToken: accessToken,
-            RefreshToken: refreshTokenString,
-            ExpiresIn: expirationMinutes * 60,
-            UserId: user.Id,
-            Email: user.Email!,
-            Name: user.Name
-        );
+        return new RegisterResultDto(user.Email!, true);
     }
 }

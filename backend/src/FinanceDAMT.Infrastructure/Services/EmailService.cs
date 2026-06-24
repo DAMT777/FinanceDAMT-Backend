@@ -35,6 +35,23 @@ public class EmailService : IEmailService
         await SendEmailAsync(toEmail, toName, subject, htmlBody, cancellationToken);
     }
 
+    public async Task SendEmailVerificationAsync(
+        string toEmail, string toName, string code, CancellationToken cancellationToken = default)
+    {
+        var subject = "Tu código de verificación de FinanceDAMT";
+        var htmlBody = $"""
+            <h2>Verifica tu correo</h2>
+            <p>Hola {toName},</p>
+            <p>Usa este código para confirmar tu cuenta de FinanceDAMT. Caduca en 15 minutos.</p>
+            <p style="font-size:32px;font-weight:bold;letter-spacing:8px;color:#00B87A;">{code}</p>
+            <p>Si no creaste esta cuenta, puedes ignorar este mensaje.</p>
+            <br/>
+            <p>El equipo de FinanceDAMT</p>
+            """;
+
+        await SendEmailAsync(toEmail, toName, subject, htmlBody, cancellationToken);
+    }
+
     public async Task SendEmailAsync(
         string toEmail, string toName, string subject, string htmlBody, CancellationToken cancellationToken = default)
     {
