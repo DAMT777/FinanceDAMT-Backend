@@ -4,6 +4,7 @@ using FinanceDAMT.Application.Features.Auth.DTOs;
 using FinanceDAMT.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace FinanceDAMT.Application.Features.Auth.Commands.Register;
@@ -12,15 +13,18 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
 {
     private readonly UserManager<User> _userManager;
     private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<RegisterCommandHandler> _logger;
 
     public RegisterCommandHandler(
         UserManager<User> userManager,
         IEmailService emailService,
+        IConfiguration configuration,
         ILogger<RegisterCommandHandler> logger)
     {
         _userManager = userManager;
         _emailService = emailService;
+        _configuration = configuration;
         _logger = logger;
     }
 
@@ -30,6 +34,10 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
         if (existingUser is not null)
             throw new ConflictException($"Email '{request.Email}' is already registered.");
 
+        // Development-only shortcut: skip email verification so the account is
+        // usable immediately. Production leaves this false and the real code +
+        // email flow runs. Toggled via AuthSettings:AutoConfirmEmail.
+        var autoConfirm = _configuration.GetValue<bool>("AuthSettings:AutoConfirmEmail");
         var code = EmailVerification.GenerateCode();
 
         var user = new User
@@ -37,9 +45,9 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
             Name = request.Name,
             Email = request.Email,
             UserName = request.Email,
-            EmailConfirmed = false,
-            EmailVerificationCode = code,
-            EmailVerificationCodeExpiresAt = EmailVerification.ExpiryFromNow()
+            EmailConfirmed = autoConfirm,
+            EmailVerificationCode = autoConfirm ? null : code,
+            EmailVerificationCodeExpiresAt = autoConfirm ? null : EmailVerification.ExpiryFromNow()
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -50,10 +58,12 @@ public class RegisterCommandHandler : IRequestHandler<RegisterCommand, RegisterR
             throw new Common.Exceptions.ValidationException(errors);
         }
 
-        _logger.LogInformation("Email verification code for {Email}: {Code}", request.Email, code);
+        if (!autoConfirm)
+        {
+            _logger.LogInformation("Email verification code for {Email}: {Code}", request.Email, code);
+            await _emailService.SendEmailVerificationAsync(user.Email!, user.Name, code, cancellationToken);
+        }
 
-        await _emailService.SendEmailVerificationAsync(user.Email!, user.Name, code, cancellationToken);
-
-        return new RegisterResultDto(user.Email!, true);
+        return new RegisterResultDto(user.Email!, !autoConfirm);
     }
 }

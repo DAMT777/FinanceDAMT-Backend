@@ -6,6 +6,7 @@ using FinanceDAMT.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using DomainRefreshToken = FinanceDAMT.Domain.Entities.RefreshToken;
 
 namespace FinanceDAMT.Application.Features.Auth.Commands.Login;
@@ -17,19 +18,22 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponse>
     private readonly IApplicationDbContext _context;
     private readonly IConfiguration _configuration;
     private readonly IEmailService _emailService;
+    private readonly ILogger<LoginCommandHandler> _logger;
 
     public LoginCommandHandler(
         UserManager<User> userManager,
         IJwtTokenService jwtTokenService,
         IApplicationDbContext context,
         IConfiguration configuration,
-        IEmailService emailService)
+        IEmailService emailService,
+        ILogger<LoginCommandHandler> logger)
     {
         _userManager = userManager;
         _jwtTokenService = jwtTokenService;
         _context = context;
         _configuration = configuration;
         _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<AuthResponse> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -46,12 +50,26 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, AuthResponse>
 
         if (!user.EmailConfirmed)
         {
-            var verificationCode = EmailVerification.GenerateCode();
-            user.EmailVerificationCode = verificationCode;
-            user.EmailVerificationCodeExpiresAt = EmailVerification.ExpiryFromNow();
-            await _userManager.UpdateAsync(user);
-            await _emailService.SendEmailVerificationAsync(user.Email!, user.Name, verificationCode, cancellationToken);
-            throw new UnauthorizedException("EMAIL_NOT_VERIFIED");
+            // Development-only: auto-confirm instead of gating on the email code,
+            // so existing unverified accounts can sign in during local testing.
+            var autoConfirm = _configuration.GetValue<bool>("AuthSettings:AutoConfirmEmail");
+            if (autoConfirm)
+            {
+                user.EmailConfirmed = true;
+                user.EmailVerificationCode = null;
+                user.EmailVerificationCodeExpiresAt = null;
+                await _userManager.UpdateAsync(user);
+            }
+            else
+            {
+                var verificationCode = EmailVerification.GenerateCode();
+                user.EmailVerificationCode = verificationCode;
+                user.EmailVerificationCodeExpiresAt = EmailVerification.ExpiryFromNow();
+                await _userManager.UpdateAsync(user);
+                _logger.LogInformation("Email verification code for {Email}: {Code}", user.Email, verificationCode);
+                await _emailService.SendEmailVerificationAsync(user.Email!, user.Name, verificationCode, cancellationToken);
+                throw new UnauthorizedException("EMAIL_NOT_VERIFIED");
+            }
         }
 
         var roles = await _userManager.GetRolesAsync(user);
