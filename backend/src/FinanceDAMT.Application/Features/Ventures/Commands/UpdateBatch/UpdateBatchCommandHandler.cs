@@ -33,7 +33,10 @@ public sealed class UpdateBatchCommandHandler : IRequestHandler<UpdateBatchComma
         batch.Date = request.Date;
         batch.Investment = request.Investment;
         batch.UnitsProduced = request.UnitsProduced;
-        batch.Income = request.Income;
+        batch.UnitPrice = request.UnitPrice;
+        // Never leave more units sold than produced after an edit.
+        if (batch.UnitsSold > batch.UnitsProduced)
+            batch.UnitsSold = batch.UnitsProduced;
         batch.Notes = request.Notes?.Trim();
 
         await _context.SaveChangesAsync(cancellationToken);

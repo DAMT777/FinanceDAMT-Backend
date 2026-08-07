@@ -10,6 +10,6 @@ public sealed record UpdateBatchCommand(
     DateTime Date,
     decimal Investment,
     int UnitsProduced,
-    decimal Income,
+    decimal UnitPrice,
     string? Notes
 ) : IRequest<VentureDto>;

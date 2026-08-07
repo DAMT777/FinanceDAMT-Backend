@@ -18,7 +18,7 @@ public sealed record CreateBatchRequest(
     DateTime Date,
     decimal Investment,
     int UnitsProduced,
-    decimal Income,
+    decimal UnitPrice,
     string? Notes
 );
 
@@ -27,6 +27,10 @@ public sealed record UpdateBatchRequest(
     DateTime Date,
     decimal Investment,
     int UnitsProduced,
-    decimal Income,
+    decimal UnitPrice,
     string? Notes
+);
+
+public sealed record RegisterSaleRequest(
+    int Units
 );

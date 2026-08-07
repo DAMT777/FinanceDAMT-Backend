@@ -4,8 +4,9 @@ namespace FinanceDAMT.Domain.Entities;
 
 /// <summary>
 /// A single production cycle of a <see cref="Venture"/>: the investment in
-/// materials, the number of units produced from it, and the income earned from
-/// selling that production. Profitability metrics are derived from these fields.
+/// materials, the units produced, the sale price per unit, and how many units
+/// have been sold so far. Revenue and profitability metrics are derived from
+/// these fields (revenue = UnitsSold * UnitPrice).
 /// </summary>
 public class VentureBatch : BaseEntity
 {
@@ -14,7 +15,8 @@ public class VentureBatch : BaseEntity
     public DateTime Date { get; set; }
     public decimal Investment { get; set; }
     public int UnitsProduced { get; set; }
-    public decimal Income { get; set; }
+    public decimal UnitPrice { get; set; }
+    public int UnitsSold { get; set; }
     public string? Notes { get; set; }
 
     public Venture Venture { get; set; } = null!;

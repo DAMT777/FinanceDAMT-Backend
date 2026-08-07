@@ -11,7 +11,7 @@ public sealed class UpdateBatchCommandValidator : AbstractValidator<UpdateBatchC
         RuleFor(x => x.Label).MaximumLength(120);
         RuleFor(x => x.Investment).GreaterThanOrEqualTo(0);
         RuleFor(x => x.UnitsProduced).GreaterThanOrEqualTo(0);
-        RuleFor(x => x.Income).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.UnitPrice).GreaterThanOrEqualTo(0);
         RuleFor(x => x.Notes).MaximumLength(500);
     }
 }

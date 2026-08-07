@@ -2,6 +2,7 @@ using FinanceDAMT.Application.Features.Ventures.Commands.AddBatch;
 using FinanceDAMT.Application.Features.Ventures.Commands.CreateVenture;
 using FinanceDAMT.Application.Features.Ventures.Commands.DeleteBatch;
 using FinanceDAMT.Application.Features.Ventures.Commands.DeleteVenture;
+using FinanceDAMT.Application.Features.Ventures.Commands.RegisterSale;
 using FinanceDAMT.Application.Features.Ventures.Commands.UpdateBatch;
 using FinanceDAMT.Application.Features.Ventures.Commands.UpdateVenture;
 using FinanceDAMT.Application.Features.Ventures.DTOs;
@@ -84,7 +85,7 @@ public class VenturesController : ControllerBase
     public async Task<IActionResult> AddBatch(Guid id, [FromBody] CreateBatchRequest request, CancellationToken ct)
     {
         var result = await _mediator.Send(
-            new AddBatchCommand(id, request.Label, request.Date, request.Investment, request.UnitsProduced, request.Income, request.Notes), ct);
+            new AddBatchCommand(id, request.Label, request.Date, request.Investment, request.UnitsProduced, request.UnitPrice, request.Notes), ct);
         return Ok(result);
     }
 
@@ -94,7 +95,17 @@ public class VenturesController : ControllerBase
     public async Task<IActionResult> UpdateBatch(Guid id, Guid bid, [FromBody] UpdateBatchRequest request, CancellationToken ct)
     {
         var result = await _mediator.Send(
-            new UpdateBatchCommand(id, bid, request.Label, request.Date, request.Investment, request.UnitsProduced, request.Income, request.Notes), ct);
+            new UpdateBatchCommand(id, bid, request.Label, request.Date, request.Investment, request.UnitsProduced, request.UnitPrice, request.Notes), ct);
+        return Ok(result);
+    }
+
+    /// <summary>Registers a sale of N units for a batch, reducing available units.</summary>
+    [HttpPost("{id:guid}/batches/{bid:guid}/sales")]
+    [ProducesResponseType(typeof(VentureDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> RegisterSale(Guid id, Guid bid, [FromBody] RegisterSaleRequest request, CancellationToken ct)
+    {
+        var result = await _mediator.Send(new RegisterSaleCommand(id, bid, request.Units), ct);
         return Ok(result);
     }
 

@@ -11,16 +11,28 @@ public class GlobalExceptionHandlerMiddleware
 {
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
+    private readonly bool _exposeErrors;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="GlobalExceptionHandlerMiddleware"/> class.
     /// </summary>
     /// <param name="next">Next middleware in pipeline.</param>
     /// <param name="logger">Structured logger instance.</param>
-    public GlobalExceptionHandlerMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlerMiddleware> logger)
+    /// <param name="environment">Host environment (to expose errors in Development).</param>
+    /// <param name="configuration">App configuration (reads Debugging:ExposeErrors).</param>
+    public GlobalExceptionHandlerMiddleware(
+        RequestDelegate next,
+        ILogger<GlobalExceptionHandlerMiddleware> logger,
+        IHostEnvironment environment,
+        IConfiguration configuration)
     {
         _next = next;
         _logger = logger;
+        // Opt-in: surface the real exception message on 500s for diagnostics.
+        // Enabled automatically in Development, or in any environment by setting
+        // Debugging:ExposeErrors=true (e.g. env var Debugging__ExposeErrors=true).
+        _exposeErrors = environment.IsDevelopment()
+            || (bool.TryParse(configuration["Debugging:ExposeErrors"], out var expose) && expose);
     }
 
     /// <summary>
@@ -47,11 +59,11 @@ public class GlobalExceptionHandlerMiddleware
                 _logger.LogError(ex, "Unhandled exception for {Method} {Path}", context.Request.Method, context.Request.Path);
             }
 
-            await HandleExceptionAsync(context, ex);
+            await HandleExceptionAsync(context, ex, _exposeErrors);
         }
     }
 
-    private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private static async Task HandleExceptionAsync(HttpContext context, Exception exception, bool exposeErrors)
     {
         context.Response.ContentType = "application/problem+json";
 
@@ -85,7 +97,9 @@ public class GlobalExceptionHandlerMiddleware
             {
                 Status = StatusCodes.Status500InternalServerError,
                 Title = "Internal Server Error",
-                Detail = "An unexpected error occurred."
+                Detail = exposeErrors
+                    ? $"{exception.GetType().Name}: {exception.Message}"
+                    : "An unexpected error occurred."
             })
         };
 
