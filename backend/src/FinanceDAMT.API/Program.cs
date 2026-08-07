@@ -122,9 +122,8 @@ RecurringJob.AddOrUpdate<IFinanceRecurringJobs>(
 
 app.MapControllers();
 
-if (app.Environment.IsDevelopment())
+using (var scope = app.Services.CreateScope())
 {
-    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider
         .GetRequiredService<FinanceDAMT.Infrastructure.Persistence.ApplicationDbContext>();
     await dbContext.Database.MigrateAsync();
