@@ -33,7 +33,11 @@ public sealed class AddContributionCommandHandler : IRequestHandler<AddContribut
             .FirstOrDefaultAsync(g => g.Id == request.GoalId && g.UserId == userId, cancellationToken)
             ?? throw new NotFoundException("Saving goal not found.");
 
-        goal.Contributions.Add(new SavingContribution
+        // Add through the DbSet (not goal.Contributions) so EF emits an INSERT.
+        // Adding to the tracked parent's collection makes EF treat the
+        // pre-populated Guid key as an existing row and emit an UPDATE (0 rows
+        // -> DbUpdateConcurrencyException). Fixup still links it to the goal.
+        _context.SavingContributions.Add(new SavingContribution
         {
             GoalId = goal.Id,
             Amount = request.Amount,

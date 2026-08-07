@@ -27,7 +27,12 @@ public sealed class AddBatchCommandHandler : IRequestHandler<AddBatchCommand, Ve
             .FirstOrDefaultAsync(v => v.Id == request.VentureId && v.UserId == userId, cancellationToken)
             ?? throw new NotFoundException("Venture not found.");
 
-        venture.Batches.Add(new VentureBatch
+        // Add through the DbSet (not venture.Batches) so EF marks it Added and
+        // emits an INSERT. Adding to the tracked parent's collection makes EF
+        // treat the pre-populated Guid key as an existing row and emit an UPDATE
+        // (0 rows affected -> DbUpdateConcurrencyException). Relationship fixup
+        // still adds it to venture.Batches for the projection below.
+        _context.VentureBatches.Add(new VentureBatch
         {
             VentureId = venture.Id,
             Label = request.Label.Trim(),
