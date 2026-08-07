@@ -27,6 +27,8 @@ public class ApplicationDbContext
     public DbSet<AIRecommendation> AIRecommendations => Set<AIRecommendation>();
     public DbSet<FinancialScore> FinancialScores => Set<FinancialScore>();
     public DbSet<Debt> Debts => Set<Debt>();
+    public DbSet<Venture> Ventures => Set<Venture>();
+    public DbSet<VentureBatch> VentureBatches => Set<VentureBatch>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

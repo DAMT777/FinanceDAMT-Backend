@@ -19,6 +19,8 @@ public interface IApplicationDbContext
     DbSet<AIRecommendation> AIRecommendations { get; }
     DbSet<FinancialScore> FinancialScores { get; }
     DbSet<Debt> Debts { get; }
+    DbSet<Venture> Ventures { get; }
+    DbSet<VentureBatch> VentureBatches { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

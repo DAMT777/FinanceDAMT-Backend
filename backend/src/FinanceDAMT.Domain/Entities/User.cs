@@ -28,4 +28,5 @@ public class User : IdentityUser<Guid>
     public ICollection<AIRecommendation> AIRecommendations { get; set; } = new List<AIRecommendation>();
     public ICollection<FinancialScore> FinancialScores { get; set; } = new List<FinancialScore>();
     public ICollection<Debt> Debts { get; set; } = new List<Debt>();
+    public ICollection<Venture> Ventures { get; set; } = new List<Venture>();
 }
