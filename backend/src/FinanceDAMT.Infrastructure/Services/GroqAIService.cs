@@ -69,12 +69,22 @@ public sealed class GroqAIService : IAIService
         var historyPrompt = string.Join("\n", history.Select(h => $"{h.Role}: {h.Content}"));
         var userPrompt = $"Context:\n{contextPrompt}\n\nConversation:\n{historyPrompt}\n\nUser: {userMessage}";
         const string systemPrompt =
-            "You are a personal finance assistant for the FinanceDAMT app. " +
-            "Answer using ONLY the data in Context, which includes expense totals by category, " +
-            "savings goals, monthly balances, and the user's active subscriptions. " +
+            "You are the personal finance assistant for the FinanceDAMT app. " +
+            "Answer using ONLY the data in Context. The Context is a full snapshot of the user's " +
+            "finances in this app and includes: currentDate; accounts and netWorth; expense totals by " +
+            "category; recentTransactions (individual movements WITH their dates, so you CAN answer " +
+            "about a specific day, this week, or a specific expense); savings goals; budgets; active " +
+            "subscriptions; ventures (entrepreneurship projects with investment, units produced/sold, " +
+            "revenue, net balance and ROI %); and monthly balances. " +
+            "You are able to answer ANY question about the user's data in this app: net worth, account " +
+            "balances, income vs expenses, savings rate and projections, weekly or daily spending (use " +
+            "recentTransactions and their dates together with currentDate), budgets, savings goals, " +
+            "subscriptions, and ventures/ROI. If the user asks about ROI or a venture, use the ventures " +
+            "data to explain the concept AND give their real figures (invested, revenue, net balance, " +
+            "ROI %). Do NOT say you only have access to a limited subset of data. " +
+            "If a specific figure genuinely isn't in the Context, say so briefly and offer the closest " +
+            "available insight — do not pad answers with unrelated data such as subscriptions unless asked. " +
             "Amounts are in the user's local currency (Colombian pesos, COP). " +
-            "When the user asks about subscriptions, list each active subscription by name with its " +
-            "amount and billing cycle, and give the total estimated monthly cost. " +
             "To assign money to a savings goal, the user must phrase it as an action such as " +
             "\"asigna el 10% de mi balance a mi meta del viaje\" or \"aporta 50000 a mi meta\"; " +
             "the app records that for real. Do not claim you assigned or moved money yourself. " +
@@ -207,7 +217,14 @@ public sealed class GroqAIService : IAIService
 
     private async Task<string> BuildFinancialContextPrompt(Guid userId)
     {
-        var since = DateTime.UtcNow.Date.AddMonths(-6);
+        var now = DateTime.UtcNow;
+        var since = now.Date.AddMonths(-6);
+
+        var accounts = await _context.Accounts
+            .Where(a => a.UserId == userId)
+            .Select(a => new { a.Name, Type = a.Type.ToString(), a.Balance })
+            .ToListAsync();
+        var netWorth = accounts.Sum(a => a.Balance);
 
         var totalsByCategory = await _context.Transactions
             .Where(t => t.UserId == userId && t.Type == TransactionType.Expense && t.Date >= since)
@@ -216,9 +233,32 @@ public sealed class GroqAIService : IAIService
             .OrderByDescending(x => x.Total)
             .ToListAsync();
 
+        // Individual recent movements (with dates) so the assistant can answer
+        // day/week-specific questions, not just monthly aggregates.
+        var recentSince = now.Date.AddDays(-45);
+        var recentTransactions = await _context.Transactions
+            .Where(t => t.UserId == userId && t.Date >= recentSince)
+            .OrderByDescending(t => t.Date)
+            .Take(80)
+            .Select(t => new
+            {
+                Date = t.Date.ToString("yyyy-MM-dd"),
+                Type = t.Type.ToString(),
+                Category = t.Category.Name,
+                Account = t.Account.Name,
+                t.Amount,
+                t.Description
+            })
+            .ToListAsync();
+
         var goals = await _context.SavingGoals
             .Where(g => g.UserId == userId)
-            .Select(g => new { g.Name, g.TargetAmount, g.CurrentAmount })
+            .Select(g => new { g.Name, g.TargetAmount, g.CurrentAmount, g.Deadline })
+            .ToListAsync();
+
+        var budgets = await _context.Budgets
+            .Where(b => b.UserId == userId && b.Month == now.Month && b.Year == now.Year)
+            .Select(b => new { Category = b.Category.Name, b.MonthlyLimit })
             .ToListAsync();
 
         var subsRaw = await _context.Subscriptions
@@ -239,6 +279,36 @@ public sealed class GroqAIService : IAIService
 
         var subscriptionsMonthlyTotal = Math.Round(subscriptions.Sum(s => s.MonthlyEquivalent), 2);
 
+        // Ventures (entrepreneurship / ROI): aggregate each project's batches.
+        var ventureEntities = await _context.Ventures
+            .Where(v => v.UserId == userId)
+            .Include(v => v.Batches)
+            .ToListAsync();
+
+        var ventures = ventureEntities.Select(v =>
+        {
+            var batches = v.Batches.Where(b => !b.IsDeleted).ToList();
+            var investment = batches.Sum(b => b.Investment);
+            var unitsProduced = batches.Sum(b => b.UnitsProduced);
+            var unitsSold = batches.Sum(b => b.UnitsSold);
+            var revenue = Math.Round(batches.Sum(b => b.UnitsSold * b.UnitPrice), 2);
+            var netBalance = revenue - investment;
+            var roiPercent = investment > 0 ? Math.Round((netBalance / investment) * 100m, 2) : 0m;
+            return new
+            {
+                v.Name,
+                v.IsActive,
+                Investment = investment,
+                UnitsProduced = unitsProduced,
+                UnitsSold = unitsSold,
+                UnitsRemaining = Math.Max(0, unitsProduced - unitsSold),
+                Revenue = revenue,
+                NetBalance = netBalance,
+                RoiPercent = roiPercent,
+                BatchCount = batches.Count
+            };
+        }).ToList();
+
         var monthlyBalance = await _context.Transactions
             .Where(t => t.UserId == userId && t.Date >= since)
             .GroupBy(t => new { t.Date.Year, t.Date.Month })
@@ -254,10 +324,16 @@ public sealed class GroqAIService : IAIService
 
         return JsonSerializer.Serialize(new
         {
+            currentDate = now.ToString("yyyy-MM-dd"),
+            accounts,
+            netWorth,
             totalsByCategory,
+            recentTransactions,
             goals,
+            budgets,
             subscriptions,
             subscriptionsMonthlyTotal,
+            ventures,
             monthlyBalance = monthlyBalance.Select(x => new { x.Year, x.Month, Balance = x.Income - x.Expenses })
         });
     }
